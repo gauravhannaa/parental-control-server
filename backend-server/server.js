@@ -33,7 +33,7 @@ app.use("/screenshots", express.static("screenshots"));
 // ==========================
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, "screenshots/");
+        cb(null, dir);
     },
     filename: function (req, file, cb) {
         cb(null, Date.now() + ".png");
