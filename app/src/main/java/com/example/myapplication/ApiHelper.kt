@@ -12,7 +12,7 @@ object ApiHelper {
     private val client = OkHttpClient()
 
     // 🔥 NGROK URL
-    private const val SERVER = "https://hanna-untransgressed-chieko.ngrok-free.dev"
+    private const val SERVER = "https://parental-control-server-jglv.onrender.com"
 
     // =========================
     // 📊 SEND LOGS (FIXED URL)

