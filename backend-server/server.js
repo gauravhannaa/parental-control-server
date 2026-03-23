@@ -4,12 +4,14 @@ const multer = require("multer");
 const fs = require("fs");
 
 const app = express();
+const path = require("path");
 
+const dir = path.join(__dirname, "screenshots");
 // ==========================
 // ✅ FIX: ensure folder exists
 // ==========================
-if (!fs.existsSync("screenshots")) {
-    fs.mkdirSync("screenshots");
+if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
 }
 
 // ==========================
